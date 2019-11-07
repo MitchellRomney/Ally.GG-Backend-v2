@@ -10,7 +10,8 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ALLOWED_HOSTS = [
     'admin.ally.gg',
-    'api.ally.gg'
+    'api.ally.gg',
+    'ally-gg-backend.herokuapp.com'
 ]
 
 CORS_ORIGIN_ALLOW_ALL = False
