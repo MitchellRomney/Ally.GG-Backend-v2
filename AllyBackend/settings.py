@@ -96,6 +96,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = 'staticfiles'
 
 CORS_ORIGIN_ALLOW_ALL = False
 
