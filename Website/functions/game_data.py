@@ -15,8 +15,12 @@ def check_champions(version):  # Create/Update all champions.
     # Fetch all current Champion information from DDragon API.
     champions_info = ddragon_api(version=version, method='data', options='champion.json')
 
+    count = 0
+
     # Loop through champions returned by API and Update/Create.
     for champion, value in champions_info['data'].items():
+        count += 1
+
         obj, created = Champion.objects.update_or_create(
             key=value['key'],
             defaults={
@@ -62,7 +66,7 @@ def check_champions(version):  # Create/Update all champions.
             }
         )
 
-        print(f'New champion added: {obj.name}') if created else print(f'Champion updated: {obj.name}')
+    print(f'Champions Updated ({count})')
 
 
 def check_runes(version):
@@ -73,6 +77,8 @@ def check_runes(version):
         name='No Rune'
     )
 
+    count = 0
+
     # Fetch all current Rune information from DDragon API.
     runes_info = ddragon_api(version=version, method='data', options='runesReforged.json')
 
@@ -80,6 +86,8 @@ def check_runes(version):
     for tree in runes_info:
         for slot in tree['slots']:
             for rune in slot['runes']:
+                count += 1
+
                 obj, created = Rune.objects.update_or_create(
                     rune_id=rune['id'],
                     defaults={
@@ -93,7 +101,7 @@ def check_runes(version):
                     }
                 )
 
-                print(f'New rune added: {obj.name}') if created else print(f'Rune updated: {obj.name}')
+    print(f'Runes Updated ({count})')
 
 
 def check_items(version):
@@ -104,11 +112,14 @@ def check_items(version):
         name='No Item'
     )
 
+    count = 0
+
     # Fetch all current Item information from DDragon API.
     items_info = ddragon_api(version=version, method='data', options='item.json')
 
     # Loop through items returned by API and Update/Create.
     for item, value in items_info['data'].items():
+        count += 1
 
         built_into = []
         built_from = []
@@ -255,7 +266,7 @@ def check_items(version):
         obj.built_into.set(built_into)
         obj.built_from.set(built_from)
 
-        print(f'New item added: {obj.name}') if created else print(f'Item updated: {obj.name}')
+    print(f'Items Updated ({count})')
 
 
 def check_spells(version):
@@ -266,9 +277,13 @@ def check_spells(version):
         name='No Summoner Spell'
     )
 
+    count = 0
+
     # Fetch all current Summoner Spell information from DDragon API.
     spells_info = ddragon_api(version=version, method='data', options='summoner.json')
     for spell, value in spells_info['data'].items():
+        count += 1
+
         defaults = {
                 'version': version,
                 'key': value['key'],
@@ -301,7 +316,7 @@ def check_spells(version):
             defaults=defaults
         )
 
-        print(f'Spell created: {obj.name}') if created else print(f'Spell updated: {obj.name}')
+    print(f'Spells Updated ({count})')
 
 
 def set_ranked_tiers():
