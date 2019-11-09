@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 
-from Website.models import (Champion, Item, Match, Participant, Profile,
-                            Summoner, Team)
+from Website.models import Champion, Item, Match, Participant, Profile, Summoner, Team, \
+    SummonerSpell, ParticipantFrame, MatchEvent
 
 
 class UserAdmin(BaseUserAdmin):
@@ -13,6 +13,10 @@ class UserAdmin(BaseUserAdmin):
         'last_login',
         'date_joined',
     )
+
+
+class SummonerSpellAdmin(admin.ModelAdmin):
+    model = SummonerSpell
 
 
 class SummonerAdmin(admin.ModelAdmin):
@@ -184,6 +188,44 @@ class ItemAdmin(admin.ModelAdmin):
     )
 
 
+class ParticipantFrameAdmin(admin.ModelAdmin):
+    model = ParticipantFrame
+
+    list_display = (
+        'match',
+        'participant_id',
+        'timestamp',
+        'date_created'
+    )
+
+    list_select_related = (
+        'match',
+    )
+
+    search_fields = (
+        'match__game_id',
+    )
+
+
+class MatchEventAdmin(admin.ModelAdmin):
+    model = MatchEvent
+
+    list_display = (
+        'match',
+        'type',
+        'timestamp',
+        'date_created'
+    )
+
+    list_select_related = (
+        'match',
+    )
+
+    search_fields = (
+        'match__game_id',
+    )
+
+
 admin.site.unregister(Group)
 admin.site.unregister(User)
 
@@ -195,3 +237,6 @@ admin.site.register(Match, MatchAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(Participant, ParticipantAdmin)
 admin.site.register(Item, ItemAdmin)
+admin.site.register(SummonerSpell, SummonerSpellAdmin)
+admin.site.register(ParticipantFrame, ParticipantFrameAdmin)
+admin.site.register(MatchEvent, MatchEventAdmin)

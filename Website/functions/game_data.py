@@ -1,11 +1,13 @@
 from Website.functions.api import ddragon_api
-from Website.models import Champion, Item, Rune
+from Website.models import Champion, Item, Rune, SummonerSpell, RankedTier
 
 
 def update_game_data(version):
     check_champions(version)
     check_runes(version)
     check_items(version)
+    check_spells(version)
+    set_ranked_tiers()
 
 
 def check_champions(version):  # Create/Update all champions.
@@ -254,3 +256,61 @@ def check_items(version):
         obj.built_from.set(built_from)
 
         print(f'New item added: {obj.name}') if created else print(f'Item updated: {obj.name}')
+
+
+def check_spells(version):
+
+    # Setup empty Item.
+    SummonerSpell.objects.get_or_create(
+        key=0,
+        name='No Summoner Spell'
+    )
+
+    # Fetch all current Summoner Spell information from DDragon API.
+    spells_info = ddragon_api(version=version, method='data', options='summoner.json')
+    for spell, value in spells_info['data'].items():
+        defaults = {
+                'version': version,
+                'key': value['key'],
+                'summoner_spell_id': value['id'],
+                'name': value['name'],
+                'description': value['description'],
+                'tooltip': value['tooltip'],
+                'maxrank': value['maxrank'],
+                'cooldown_burn': value['cooldownBurn'],
+                'cost_burn': value['costBurn'],
+                'summoner_level': value['summonerLevel'],
+                'cost_type': value['costType'],
+                'maxammo': value['maxammo'],
+                'range_burn': value['rangeBurn'],
+                'image_full': value['image']['full'],
+                'image_sprite': value['image']['sprite'],
+                'image_group': value['image']['group'],
+                'image_x': value['image']['x'],
+                'image_y': value['image']['y'],
+                'image_w': value['image']['w'],
+                'image_h': value['image']['h'],
+                'resource': value['resource'] if 'resource' in value else None,
+                'cooldown': value['cooldown'][0],
+                'cost': value['cost'][0],
+                'range': value['range'][0]
+            }
+
+        obj, created = SummonerSpell.objects.update_or_create(
+            key=value['key'],
+            defaults=defaults
+        )
+
+        print(f'Spell created: {obj.name}') if created else print(f'Spell updated: {obj.name}')
+
+
+def set_ranked_tiers():
+    RankedTier.objects.get_or_create(key='CHALLENGER', name='Challenger', order=1)
+    RankedTier.objects.get_or_create(key='GRANDMASTER', name='Grandmaster', order=2)
+    RankedTier.objects.get_or_create(key='MASTER', name='Master', order=3)
+    RankedTier.objects.get_or_create(key='DIAMOND', name='Diamond', order=4)
+    RankedTier.objects.get_or_create(key='PLATINUM', name='Platinum', order=5)
+    RankedTier.objects.get_or_create(key='GOLD', name='Gold', order=6)
+    RankedTier.objects.get_or_create(key='SILVER', name='Silver', order=7)
+    RankedTier.objects.get_or_create(key='BRONZE', name='Bronze', order=8)
+    RankedTier.objects.get_or_create(key='IRON', name='Iron', order=9)

@@ -8,12 +8,12 @@ from channels.layers import get_channel_layer
 
 from AllyBackend import schema
 from AllyBackend.celery import app
-from Website.functions.api import get_latest_version, get_match, get_summoner
-from Website.functions.game_data import update_game_data
 
 
 @celeryd_init.connect
 def startup_tasks(sender=None, conf=None, **kwargs):
+    from Website.functions.api import get_latest_version
+    from Website.functions.game_data import update_game_data
 
     # Clean out old queue
     app.control.purge()
@@ -25,6 +25,8 @@ def startup_tasks(sender=None, conf=None, **kwargs):
 
 @app.task
 def update_summoner(summoner_id, server):
+    from Website.functions.api import get_summoner
+
     get_summoner(summoner_id=summoner_id, server=server)
 
     room_group_name = f'summoner_{server}_{summoner_id}'
@@ -90,7 +92,8 @@ def update_summoner(summoner_id, server):
 
 @app.task
 def fetch_match(game_id, summoner_id, server):
-    result = get_match(game_id, server)
+    from Website.functions.api import get_match
+    get_match(game_id, server)
 
     room_group_name = 'summoner_{0}_{1}'.format(server, summoner_id)
 

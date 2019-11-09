@@ -1,12 +1,14 @@
 import re
 
 from django.db.models.signals import post_save
+from django.db.models import F
 
-from Website.models import (Champion, Item, Match, Participant, Rune, Summoner,
-                            SummonerSpell, Team)
+from Website.models import Champion, Item, Match, Participant, Rune, Summoner, \
+    SummonerSpell, Team, ParticipantFrame, MatchEvent
 
 
 def save_match(match_data, server):
+    from Website.functions.api import get_timeline
 
     # Do not add matches that were before 2018 Pre-Season or that are tutorial games.
     if match_data['seasonId'] <= 10 or match_data['queueId'] > 2000:
@@ -51,6 +53,7 @@ def save_match(match_data, server):
 
     participants = create_participants(match_obj, match_data, player_accounts, blue_team, red_team)
     Participant.objects.bulk_create(participants)
+    get_timeline(match_obj, server)
 
     return match_obj, [blue_team, red_team], participants
 
@@ -116,6 +119,34 @@ def create_participants(match, match_data, player_accounts, blue_team, red_team)
             position = 'SUPPORT' if participant['timeline']['role'] == 'DUO_SUPPORT' else 'BOTTOM'
         else:
             position = participant['timeline']['lane']
+
+        # Timeline data - CS Deltas
+        cs_delta_list = []
+        key = 9
+
+        cs_delta = ParticipantFrame.objects \
+            .filter(match=match, participant_id=participant['participantId']) \
+            .order_by('timestamp') \
+            .annotate(total_minions=F('minions_killed') + F('jungle_minions_killed')) \
+            .values_list('total_minions', flat=True)
+
+        cs_range = int((len(cs_delta) - (len(cs_delta) % 10)) / 10)
+        for x in range(0, cs_range):
+            cs_delta_list.append(cs_delta[key])
+            key += 10
+
+        # Timeline Data - Skill Order
+        skill_order = []
+        skill_map = {1: 'Q', 2: 'W', 3: 'E', 4: 'R'}
+        skill_level_ups = MatchEvent.objects.filter(
+            match=match,
+            participant_id=participant['participantId'],
+            type="SKILL_LEVEL_UP",
+            level_up_type="NORMAL"
+        ).order_by('timestamp').values_list('skill_slot', flat=True)
+
+        for skill in skill_level_ups:
+            skill_order.append(skill_map[skill])
 
         defaults = {
             'match': match,
@@ -186,6 +217,8 @@ def create_participants(match, match_data, player_accounts, blue_team, red_team)
                 rune_id=participant['stats']['perk5'],
                 defaults={'rune_id': participant['stats']['perk5'], 'version': patch}
             )[0],
+            'cs10_deltas': cs_delta_list,
+            'skill_order': skill_order
         }
 
         field_mappings = {
@@ -293,3 +326,77 @@ def create_participants(match, match_data, player_accounts, blue_team, red_team)
         new_participants.append(participant)
 
     return new_participants
+
+
+def save_timeline(timeline_data, match):
+    frames = []
+    events = []
+
+    if timeline_data['frames']:
+        for frame in timeline_data['frames']:
+            timestamp = frame['timestamp']
+
+            if frame['participantFrames']:
+                for key in frame['participantFrames']:
+                    participant = frame['participantFrames'][key]
+
+                    # The final frame for a game has no position value, so we need to accommodate.
+                    if 'position' in participant:
+                        position_x = participant['position']['x']
+                        position_y = participant['position']['y']
+                    else:
+                        position_x = None
+                        position_y = None
+
+                    frames.append(
+                        ParticipantFrame(
+                            match=match,
+                            timestamp=timestamp,
+                            participant_id=participant['participantId'],
+                            total_gold=participant['totalGold'],
+                            level=participant['level'],
+                            current_gold=participant['currentGold'],
+                            minions_killed=participant['minionsKilled'],
+                            position_x=position_x,
+                            position_y=position_y,
+                            xp=participant['xp'],
+                            jungle_minions_killed=participant['jungleMinionsKilled'],
+                        )
+                    )
+
+            if frame['events']:
+                for event in frame['events']:
+                    event_obj = MatchEvent(
+                        match=match,
+                        timestamp=event['timestamp'],
+                        type=event['type']
+                    )
+
+                    event_obj.participant_id = event['participantId'] if 'participantId' in event else None
+                    event_obj.team_id = event['teamId'] if 'teamId' in event else None
+                    event_obj.item_id = event['itemId'] if 'itemId' in event else None
+                    event_obj.victim_id = event['victimId'] if 'victimId' in event else None
+                    event_obj.creator_id = event['creatorId'] if 'creatorId' in event else None
+                    event_obj.killer_id = event['killerId'] if 'killerId' in event else None
+                    event_obj.assisting_participant_ids = event[
+                        'assistingParticipantIds'] if 'assistingParticipantIds' in event else None
+                    event_obj.level_up_type = event['levelUpType'] if 'levelUpType' in event else None
+                    event_obj.ward_type = event['wardType'] if 'wardType' in event else None
+                    event_obj.building_type = event['buildingType'] if 'buildingType' in event else None
+                    event_obj.monster_type = event['monsterType'] if 'monsterType' in event else None
+                    event_obj.monster_sub_type = event['monsterSubType'] if 'monsterSubType' in event else None
+                    event_obj.tower_type = event['towerType'] if 'towerType' in event else None
+                    event_obj.lane_type = event['laneType'] if 'laneType' in event else None
+                    event_obj.skill_slot = event['skillSlot'] if 'skillSlot' in event else None
+                    event_obj.position_x = event['position']['x']  if 'position' in event else None
+                    event_obj.position_y = event['position']['y'] if 'position' in event else None
+
+                    events.append(event_obj)
+
+    if len(frames) > 0:
+        ParticipantFrame.objects.bulk_create(frames)
+
+    if len(events) > 0:
+        MatchEvent.objects.bulk_create(events)
+
+    return True

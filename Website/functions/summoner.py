@@ -1,7 +1,5 @@
-from Website.models import Summoner
-
-
 def save_summoner(summoner_data, server):
+    from Website.models import Summoner
     defaults = {}
     field_mappings = {
         'id': 'summoner_id',

@@ -2,21 +2,37 @@ import graphene
 import graphql_jwt
 
 from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken
-from Website.schema.types import UserType
+from Website.schema.types import UserType, SummonerType, ParticipantType
 from django.contrib.auth.models import User
 
 
 class Query(object):
-    user = graphene.Field(UserType, username=graphene.String(), id=graphene.Int())
+    user = graphene.Field(UserType, user_id=graphene.Int())
 
     @staticmethod
     def resolve_user(self, info, **kwargs):
-        username = kwargs.get('username')
-        user_id = kwargs.get('id')
-        if user_id is not None:
-            return User.objects.get(id=user_id)
-        else:
-            return User.objects.get(username=username)
+        return User.objects.get(id=kwargs.get('user_id')) if kwargs.get('user_id') is not None else \
+            User.objects.get(username=kwargs.get('username'))
+
+    user_summoners = graphene.List(SummonerType, user_id=graphene.Int())
+
+    @staticmethod
+    def resolve_user_summoners(self, info, **kwargs):
+        from Website.models import Summoner
+        return Summoner.objects.filter(user_profile__user__id=kwargs.get('user_id')).select_related('user_profile')
+
+    summoner_participants = graphene.List(ParticipantType,
+                                          games=graphene.Int(),
+                                          summoner_id=graphene.String(),
+                                          server=graphene.String())
+
+    @staticmethod
+    def resolve_summoner_participants(self, info, **kwargs):
+        from Website.models import Participant
+        return Participant.objects \
+                   .filter(summoner__summoner_id=kwargs.get('summoner_id'),summoner__server=kwargs.get('server')) \
+                   .select_related('champion', 'summoner', 'match', 'item0', 'item1', 'item2', 'item3', 'item4',
+                                   'item5', 'item6').order_by('-match__timestamp')[:kwargs.get('games')]
 
 
 class Mutation(graphene.ObjectType):

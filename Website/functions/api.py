@@ -6,7 +6,7 @@ import requests
 from django.conf import settings
 from django.db import IntegrityError, transaction
 
-from Website.functions.match import save_match
+from Website.functions.match import save_match, save_timeline
 from Website.functions.summoner import save_summoner
 from Website.models import Summoner
 
@@ -99,7 +99,7 @@ def get_match_list(summoner_id, server='OC1', games=None, fetch_all=False):
         if 'matches' in matches:
             total_matches.extend(matches['matches'])
 
-            if len(total_matches) >= games or (fetch_all and len(matches['matches']) != 100):
+            if len(total_matches) >= games or len(matches['matches']) != 100:
                 next_page = False
 
             begin_index += 100
@@ -118,3 +118,15 @@ def get_latest_version():
 
     # Return the latest version in the version list.
     return version_list[0]
+
+
+def get_timeline(match, server):
+
+    # Build the URL for the Riot API request.
+    path = f'timelines/by-match/{match.game_id}'
+
+    # Fetch the information from the Riot API.
+    api_response = riot_api(server=server, endpoint='match', path=path)
+
+    # Save the Summoner to the database and return the result.
+    return save_timeline(api_response, match)
