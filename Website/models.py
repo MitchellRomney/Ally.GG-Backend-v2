@@ -377,7 +377,7 @@ class Match(models.Model):
         (830, 'Co-op vs. AI Intro Bot'),
         (840, 'Co-op vs. AI Beginner Bot'),
         (850, 'Co-op vs. AI Intermediate Bot'),
-        (900, 'ARURF'),
+        (900, 'URF'),
         (910, 'Ascension'),
         (920, 'Legend of the Poro King'),
         (940, 'Nexus Siege'),
