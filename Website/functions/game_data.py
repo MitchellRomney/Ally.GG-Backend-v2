@@ -1,19 +1,22 @@
+import requests
 from Website.functions.api import ddragon_api
 from Website.models import Champion, Item, Rune, SummonerSpell, RankedTier
 
 
 def update_game_data(version):
-    check_champions(version)
-    check_runes(version)
-    check_items(version)
-    check_spells(version)
+    with requests.session() as session:
+        check_champions(version, session)
+        check_runes(version, session)
+        check_items(version, session)
+        check_spells(version, session)
+
     set_ranked_tiers()
 
 
-def check_champions(version):  # Create/Update all champions.
+def check_champions(version, session):  # Create/Update all champions.
 
     # Fetch all current Champion information from DDragon API.
-    champions_info = ddragon_api(version=version, method='data', options='champion.json')
+    champions_info = ddragon_api(version=version, method='data', options='champion.json', session=session)
 
     count = 0
 
@@ -69,7 +72,7 @@ def check_champions(version):  # Create/Update all champions.
     print(f'Champions Updated ({count})')
 
 
-def check_runes(version):
+def check_runes(version, session):
 
     # Setup empty Rune.
     Rune.objects.get_or_create(
@@ -80,7 +83,7 @@ def check_runes(version):
     count = 0
 
     # Fetch all current Rune information from DDragon API.
-    runes_info = ddragon_api(version=version, method='data', options='runesReforged.json')
+    runes_info = ddragon_api(version=version, method='data', options='runesReforged.json', session=session)
 
     # Loop through runes returned by API and Update/Create.
     for tree in runes_info:
@@ -104,7 +107,7 @@ def check_runes(version):
     print(f'Runes Updated ({count})')
 
 
-def check_items(version):
+def check_items(version, session):
 
     # Setup empty Item.
     Item.objects.get_or_create(
@@ -115,7 +118,7 @@ def check_items(version):
     count = 0
 
     # Fetch all current Item information from DDragon API.
-    items_info = ddragon_api(version=version, method='data', options='item.json')
+    items_info = ddragon_api(version=version, method='data', options='item.json', session=session)
 
     # Loop through items returned by API and Update/Create.
     for item, value in items_info['data'].items():
@@ -269,7 +272,7 @@ def check_items(version):
     print(f'Items Updated ({count})')
 
 
-def check_spells(version):
+def check_spells(version, session):
 
     # Setup empty Item.
     SummonerSpell.objects.get_or_create(
@@ -280,7 +283,7 @@ def check_spells(version):
     count = 0
 
     # Fetch all current Summoner Spell information from DDragon API.
-    spells_info = ddragon_api(version=version, method='data', options='summoner.json')
+    spells_info = ddragon_api(version=version, method='data', options='summoner.json', session=session)
     for spell, value in spells_info['data'].items():
         count += 1
 

@@ -11,24 +11,24 @@ from Website.functions.summoner import save_summoner
 from Website.models import Summoner
 
 
-def riot_api(server=None, endpoint=None, version='v4', path=None):
+def riot_api(server=None, endpoint=None, version='v4', path=None, session=None):
 
     url = f'https://{server}.api.riotgames.com/lol/{endpoint}/{version}/{path}'
     headers = {'X-Riot-Token': settings.RIOT_API_KEY}
 
-    response = requests.get(url, headers=headers)
+    response = session.get(url, headers=headers) if session else requests.get(url, headers=headers)
 
     # TODO: Error Handling
 
     return json.loads(json.dumps(response.json()))
 
 
-def ddragon_api(version=None, method=None, options=None, language='en_US'):
+def ddragon_api(version=None, method=None, options=None, language='en_US', session=None):
 
     url = f'https://ddragon.leagueoflegends.com/cdn/{version}/{method}/{language}/{options}'
     headers = {'X-Riot-Token': settings.RIOT_API_KEY}
 
-    response = requests.get(url, headers=headers)
+    response = session.get(url, headers=headers) if session else requests.get(url, headers=headers)
 
     # TODO: Error Handling
 
