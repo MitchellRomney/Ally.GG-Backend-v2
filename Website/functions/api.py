@@ -8,7 +8,6 @@ from django.db import IntegrityError, transaction
 
 from Website.functions.match import save_match, save_timeline
 from Website.functions.summoner import save_summoner
-from Website.models import Summoner
 
 
 def riot_api(server=None, endpoint=None, version='v4', path=None, session=None):
@@ -73,9 +72,10 @@ def get_match(game_id=None, server=None):
 
 
 def get_match_list(summoner_id, server='OC1', games=None, fetch_all=False):
+    from Website.models import Summoner
 
     begin_index = 0
-    end_index = games if games else 100
+    end_index = games if not fetch_all else 100
     next_page = True
     total_matches = []
 
@@ -99,7 +99,7 @@ def get_match_list(summoner_id, server='OC1', games=None, fetch_all=False):
         if 'matches' in matches:
             total_matches.extend(matches['matches'])
 
-            if len(total_matches) >= games or len(matches['matches']) != 100:
+            if len(matches['matches']) != 100 or (len(total_matches) >= games and not fetch_all):
                 next_page = False
 
             begin_index += 100

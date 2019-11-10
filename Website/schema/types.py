@@ -5,7 +5,7 @@ from django.db.models import Sum
 from graphene_django.types import DjangoObjectType
 from graphql_jwt.utils import jwt_encode, jwt_payload
 
-from Website.models import Summoner, RankedTier, Participant, Champion, Match, Item, Rune, SummonerSpell, Team
+from Website.models import Summoner, RankedTier, Participant, Champion, Match, Item, Rune, SummonerSpell, Team, Profile
 
 
 class ItemType(DjangoObjectType):
@@ -110,6 +110,11 @@ class ParticipantType(DjangoObjectType):
 class ChampionType(DjangoObjectType):
     class Meta:
         model = Champion
+
+
+class ProfileType(DjangoObjectType):
+    class Meta:
+        model = Profile
 
 
 class MatchType(DjangoObjectType):
