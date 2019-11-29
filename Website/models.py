@@ -231,7 +231,7 @@ class Champion(models.Model):
 
 class Profile(models.Model):
     user = models.ForeignKey(User, related_name="Profiles", on_delete=models.CASCADE, blank=False)
-    main_summoner = models.ForeignKey('Summoner', related_name='Main_Summoners', on_delete=models.SET_NULL, null=True)
+    main_summoner = models.ForeignKey('Summoner', related_name='Main_Summoners', on_delete=models.SET_NULL, null=True, blank=True)
     email_confirmed = models.BooleanField(default=False)
     archived = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, blank=False)
