@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 
 from Website.models import Champion, Item, Match, Participant, Profile, Summoner, Team, \
-    SummonerSpell, ParticipantFrame, MatchEvent
+    SummonerSpell, ParticipantFrame, MatchEvent, RegistrationInterest, AccessCode
 
 
 class UserAdmin(BaseUserAdmin):
@@ -225,6 +225,36 @@ class MatchEventAdmin(admin.ModelAdmin):
         'match__game_id',
     )
 
+class RegistrationInterestAdmin(admin.ModelAdmin):
+    model = RegistrationInterest
+
+    list_display = (
+       'first_name',
+       'email',
+       'user',
+        'date_created'
+    )
+
+    list_select_related = (
+        'user',
+    )
+
+    search_fields = (
+        'email',
+    )
+
+class AccessCodeAdmin(admin.ModelAdmin):
+   model = AccessCode
+
+   list_display = (
+       'key',
+       'used',
+       'user',
+       'date_used',
+       'date_created',
+       'archived'
+   )
+
 
 admin.site.unregister(Group)
 admin.site.unregister(User)
@@ -240,3 +270,5 @@ admin.site.register(Item, ItemAdmin)
 admin.site.register(SummonerSpell, SummonerSpellAdmin)
 admin.site.register(ParticipantFrame, ParticipantFrameAdmin)
 admin.site.register(MatchEvent, MatchEventAdmin)
+admin.site.register(RegistrationInterest, RegistrationInterestAdmin)
+admin.site.register(AccessCode, AccessCodeAdmin)

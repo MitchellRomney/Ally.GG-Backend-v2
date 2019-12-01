@@ -28,3 +28,10 @@ DEBUG = False
 DEVELOPER_MODE = False
 
 SECURE_SSL_REDIRECT = True
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'support@ally.gg'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+EMAIL_PORT = 587

@@ -4,9 +4,29 @@ from Website.schema.types import UserType
 
 from Website.functions.api import get_summoner
 from Website.functions.game_data import update_game_data
+from Website.functions.general import account_activation_token, generate_early_access_code
 from Website.schema.types import SummonerType, UserNode, ProfileType
+from django.db import IntegrityError
+from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login
+from django.core.mail import send_mail
+from datetime import datetime
+
+
+class RegisterInterest(graphene.Mutation):
+    class Arguments:
+        name = graphene.String()
+        email = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, info, name, email):
+        from Website.models import RegistrationInterest
+        RegistrationInterest.objects.create(first_name=name, email=email)
+
+        return RegisterInterest(success=True)
 
 
 class FetchSummoner(graphene.Mutation):
@@ -75,7 +95,7 @@ class UpdateGameData(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info):
-        update_game_data('9.21.1')
+        update_game_data('9.22.1')
 
         return UpdateGameData(success=True)
 
@@ -106,6 +126,80 @@ class Login(graphene.Mutation):
         return cls(user=user)
 
 
+class RegisterInput(graphene.InputObjectType):
+    username = graphene.String(required=True)
+    email = graphene.String(required=True)
+    password = graphene.String(required=True)
+    key = graphene.String(required=True)
+
+
+class Register(graphene.Mutation):
+    class Arguments:
+        input = RegisterInput()
+
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+
+    @staticmethod
+    def mutate(root, info, input):
+        from Website.models import AccessCode, User
+        try:
+            access_key = AccessCode.objects.get(key=input.key)
+
+            if access_key.used is False:
+                try:
+                    # Create the new user.
+                    user = User.objects.create(
+                        username=input.username,
+                        email=input.email,
+                        is_active=True
+                    )
+                    user.set_password(input.password)
+                    user.save()
+
+                    # Deactivate the Access Key used.
+                    access_key.used = True
+                    access_key.archived = True
+                    access_key.user = user
+                    access_key.date_used = datetime.now()
+                    access_key.save()
+
+                    # Send confirmation email.
+                    mail_subject = 'Welcome to Ally! Let\'s activate your account.'
+                    mail_plain = render_to_string('Website/email/email_confirmation.txt', {
+                        'user': user,
+                        'domain': 'api.ally.gg',
+                        'username': user.username,
+                        'token': account_activation_token.make_token(user),
+                    })
+                    mail_html = render_to_string('Website/email/email_confirmation.html', {
+                        'user': user,
+                        'domain': 'api.ally.gg',
+                        'username': user.username,
+                        'token': account_activation_token.make_token(user),
+                    })
+                    send_mail(
+                        mail_subject,  # Email subject.
+                        mail_plain,  # Email plaintext.
+                        'noreply@ally.gg',  # Email 'From' address.
+                        [user.email, ],  # Email 'To' addresses. This must be a list or tuple.
+                        html_message=mail_html,  # Email in HTML.
+                    )
+                    return Register(success=bool(user.id))
+
+                except IntegrityError:
+                    errors = ["email", "Email already registered."]
+                    return Register(success=False, errors=errors)
+
+            else:
+                errors = ["key", "Access Key has already been used."]
+                return Register(success=False, errors=errors)
+
+        except AccessCode.DoesNotExist:
+            errors = ["key", "Access Key does not exist."]
+            return Register(success=False, errors=errors)
+
+
 class ObtainJSONWebToken(graphql_jwt.JSONWebTokenMutation):
     user = graphene.Field(UserType)
     expires = graphene.DateTime()
@@ -114,3 +208,11 @@ class ObtainJSONWebToken(graphql_jwt.JSONWebTokenMutation):
     def resolve(cls, root, info, **kwargs):
 
         return cls(user=info.context.user)
+
+
+class CreateAccessKey(graphene.Mutation):
+    key = graphene.String()
+
+    @staticmethod
+    def mutate(root, info):
+        return CreateAccessKey(key=generate_early_access_code())

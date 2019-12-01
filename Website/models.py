@@ -14,6 +14,32 @@ class RankedTier(models.Model):
         return self.name
 
 
+class AccessCode(models.Model):
+    key = models.CharField(max_length=32, blank=False, null=False)
+
+    user = models.ForeignKey(User, related_name="Access_Codes", on_delete=models.SET_NULL, blank=True, null=True)
+    used = models.BooleanField(default=False)
+    date_used = models.DateTimeField(blank=True, null=True)
+
+    archived = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True, blank=False)
+
+    def __str__(self):
+        return self.key
+
+
+class RegistrationInterest(models.Model):
+    first_name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    user = models.ForeignKey(User, related_name='RegistrationInterest_User', on_delete=models.SET_NULL, blank=True, null=True)
+
+    date_created = models.DateTimeField(auto_now_add=True, blank=False)
+    date_modified = models.DateTimeField(auto_now=True, blank=False)
+
+    def __str__(self):
+        return self.email
+
+
 class SummonerSpell(models.Model):
     version = models.CharField(max_length=255, null=True)
     key = models.IntegerField(blank=False, unique=True, primary_key=True)

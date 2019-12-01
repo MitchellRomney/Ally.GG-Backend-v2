@@ -2,15 +2,16 @@ import graphene
 import graphql_jwt
 
 from Website.schema.mutations import (FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken,
-                                      EditProfile)
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType
+                                      EditProfile, RegisterInterest, Register, CreateAccessKey)
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, RegistrationInterestType
 from django.contrib.auth.models import User
 
 
 class Query(object):
     user = graphene.Field(
         UserType,
-        user_id=graphene.Int())
+        user_id=graphene.Int(),
+        username=graphene.String())
 
     user_summoners = graphene.List(
         SummonerType,
@@ -58,6 +59,9 @@ class Mutation(graphene.ObjectType):
     fetch_matches = FetchMatches.Field()
     update_game_data = UpdateGameData.Field()
     edit_profile = EditProfile.Field()
+    register_interest = RegisterInterest.Field()
+    create_access_key = CreateAccessKey.Field()
+    register = Register.Field()
     token_auth = ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
