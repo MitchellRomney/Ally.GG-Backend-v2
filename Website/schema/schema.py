@@ -3,7 +3,7 @@ import graphql_jwt
 
 from Website.schema.mutations import (FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken,
                                       EditProfile, RegisterInterest, Register, CreateAccessKey)
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, RegistrationInterestType
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, RegistrationInterestType, AccessKeyType
 from django.contrib.auth.models import User
 
 
@@ -30,6 +30,11 @@ class Query(object):
         user_id=graphene.Int()
     )
 
+    key = graphene.Field(
+        AccessKeyType,
+        key=graphene.String()
+    )
+
     @staticmethod
     def resolve_user(self, info, **kwargs):
         return User.objects.get(id=kwargs.get('user_id')) if kwargs.get('user_id') is not None else \
@@ -52,6 +57,16 @@ class Query(object):
     def resolve_profile(self, info, **kwargs):
         from Website.models import Profile
         return Profile.objects.get(user__id=kwargs.get('user_id'))
+
+    @staticmethod
+    def resolve_key(self, info, **kwargs):
+        from Website.models import AccessCode
+        
+        key = kwargs.get('key')
+
+        if key:
+            return AccessCode.objects.get(key=key)
+
 
 
 class Mutation(graphene.ObjectType):
