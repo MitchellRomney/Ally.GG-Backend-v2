@@ -13,11 +13,15 @@ from Website.functions.summoner import save_summoner
 def riot_api(server=None, endpoint=None, version='v4', path=None, session=None):
 
     url = f'https://{server}.api.riotgames.com/lol/{endpoint}/{version}/{path}'
+    print(url)
     headers = {'X-Riot-Token': settings.RIOT_API_KEY}
 
     response = session.get(url, headers=headers) if session else requests.get(url, headers=headers)
 
     # TODO: Error Handling
+
+    if response.status_code in [404, 403]:
+        return { "error": True, "message": f"{response.status_code} ERROR" }
 
     return json.loads(json.dumps(response.json()))
 

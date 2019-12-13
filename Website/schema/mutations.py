@@ -164,6 +164,8 @@ class Register(graphene.Mutation):
                     access_key.date_used = datetime.now()
                     access_key.save()
 
+                    # TODO: If DEBUG ignore email
+
                     # Send confirmation email.
                     mail_subject = 'Welcome to Ally! Let\'s activate your account.'
                     mail_plain = render_to_string('Website/email/email_confirmation.txt', {
@@ -216,3 +218,70 @@ class CreateAccessKey(graphene.Mutation):
     @staticmethod
     def mutate(root, info):
         return CreateAccessKey(key=generate_early_access_code())
+
+
+class VerifySummoner(graphene.Mutation):
+    class Arguments:
+        summoner_name = graphene.String()
+        server = graphene.String()
+        user_id = graphene.Int()
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    summoner = graphene.Field(SummonerType)
+
+    @staticmethod
+    def mutate(root, info, summoner_name, server, user_id):
+        from Website.functions.api import riot_api, get_summoner
+        from Website.models import Summoner, Profile
+
+        try:
+            summoner = Summoner.objects.get(summoner_name=summoner_name)
+        except:
+            summoner = get_summoner(summoner_name, server)['summoner']
+
+        response = riot_api(server, 'platform', 'v4', 'third-party-code/by-summoner/' + summoner.summoner_id)
+        print(response)
+
+        if 'error' not in response:
+            try:
+                profile = Profile.objects.get(user__id=user_id)
+            except:
+                # Error: No Profile
+                return VerifySummoner(
+                    success=False,
+                    message=f'No user with the id of {user_id} was found.',
+                    summoner=None
+                )
+
+            if profile.third_party_token == response:
+                summoner.user_profile = profile
+                summoner.save()
+
+                if profile.main_summoner is None:
+                    profile.main_summoner = summoner
+                    profile.save()
+
+                return VerifySummoner(
+                    success=True,
+                    message=f'Summoner successfully verified.',
+                    summoner=summoner
+                )
+            else:
+                # Error: Token returned was incorrect.
+                return VerifySummoner(
+                    success=False,
+                    message=f'Incorrect Token. API returned {response}',
+                    summoner=None
+                )
+
+        else:
+            # Error: API call failed.
+            return VerifySummoner(
+                success=False,
+                message=f'Riot API returned error: {response["message"]}.',
+                summoner=None
+            )
+
+
+

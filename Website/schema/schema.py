@@ -1,9 +1,9 @@
 import graphene
 import graphql_jwt
 
-from Website.schema.mutations import (FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken,
-                                      EditProfile, RegisterInterest, Register, CreateAccessKey)
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, RegistrationInterestType, AccessKeyType
+from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken, \
+    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType
 from django.contrib.auth.models import User
 
 
@@ -56,17 +56,29 @@ class Query(object):
     @staticmethod
     def resolve_profile(self, info, **kwargs):
         from Website.models import Profile
-        return Profile.objects.get(user__id=kwargs.get('user_id'))
+        from Website.functions.general import generate_summoner_verification_code
+
+        user_id = kwargs.get('user_id')
+
+        try:
+            user_profile = Profile.objects.get(user__id=user_id)
+
+            if user_profile.third_party_token is None:
+                user_profile.third_party_token = generate_summoner_verification_code()
+                user_profile.save()
+
+            return user_profile
+        except:
+            return None
 
     @staticmethod
     def resolve_key(self, info, **kwargs):
         from Website.models import AccessCode
-        
+
         key = kwargs.get('key')
 
         if key:
             return AccessCode.objects.get(key=key)
-
 
 
 class Mutation(graphene.ObjectType):
@@ -81,3 +93,5 @@ class Mutation(graphene.ObjectType):
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
     login = Login.Field()
+    verify_summoner = VerifySummoner.Field()
+
