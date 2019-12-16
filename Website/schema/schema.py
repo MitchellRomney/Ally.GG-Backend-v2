@@ -18,6 +18,13 @@ class Query(object):
         user_id=graphene.Int()
     )
 
+    participant = graphene.Field(
+        ParticipantType,
+        game_id=graphene.Int(),
+        summoner_id=graphene.String(),
+        server=graphene.String()
+    )
+
     summoner_participants = graphene.List(
         ParticipantType,
         games=graphene.Int(),
@@ -44,6 +51,11 @@ class Query(object):
     def resolve_user_summoners(self, info, **kwargs):
         from Website.models import Summoner
         return Summoner.objects.filter(user_profile__user__id=kwargs.get('user_id')).select_related('user_profile')
+
+    @staticmethod
+    def resolve_participant(self, info, **kwargs):
+        from Website.models import Participant
+        return Participant.objects.get(match__game_id=kwargs.get('game_id'), summoner__server=kwargs.get('server'), summoner__summoner_id=kwargs.get('summoner_id'))
 
     @staticmethod
     def resolve_summoner_participants(self, info, **kwargs):

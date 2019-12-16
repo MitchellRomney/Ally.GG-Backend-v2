@@ -6,14 +6,10 @@ import requests
 from django.conf import settings
 from django.db import IntegrityError, transaction
 
-from Website.functions.match import save_match, save_timeline
-from Website.functions.summoner import save_summoner
-
 
 def riot_api(server=None, endpoint=None, version='v4', path=None, session=None):
 
     url = f'https://{server}.api.riotgames.com/lol/{endpoint}/{version}/{path}'
-    print(url)
     headers = {'X-Riot-Token': settings.RIOT_API_KEY}
 
     response = session.get(url, headers=headers) if session else requests.get(url, headers=headers)
@@ -39,6 +35,7 @@ def ddragon_api(version=None, method=None, options=None, language='en_US', sessi
 
 
 def get_summoner(summoner_name=None, server=None, summoner_id=None):
+    from Website.functions.summoner import save_summoner
 
     # Build the URL for the Riot API request.
     path = f'summoners/{summoner_id}' if summoner_id else f'summoners/by-name/{summoner_name}'
@@ -51,6 +48,7 @@ def get_summoner(summoner_name=None, server=None, summoner_id=None):
 
 
 def get_match(game_id=None, server=None):
+    from Website.functions.match import save_match
 
     success = True
 
@@ -125,6 +123,7 @@ def get_latest_version():
 
 
 def get_timeline(match, server):
+    from Website.functions.match import save_timeline
 
     # Build the URL for the Riot API request.
     path = f'timelines/by-match/{match.game_id}'

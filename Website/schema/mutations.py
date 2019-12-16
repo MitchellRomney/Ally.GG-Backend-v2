@@ -247,7 +247,6 @@ class VerifySummoner(graphene.Mutation):
             try:
                 profile = Profile.objects.get(user__id=user_id)
             except:
-                # Error: No Profile
                 return VerifySummoner(
                     success=False,
                     message=f'No user with the id of {user_id} was found.',

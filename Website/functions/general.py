@@ -1,7 +1,6 @@
 from Website.models import AccessCode
 from django.utils.crypto import get_random_string
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils import six
 
 
 class TokenGenerator(PasswordResetTokenGenerator):
@@ -9,8 +8,7 @@ class TokenGenerator(PasswordResetTokenGenerator):
     # Create email confirmation token.
     def _make_hash_value(self, user, timestamp):
         return (
-            six.text_type(user.pk) + six.text_type(timestamp) +
-            six.text_type(user.is_active)
+            str(user.pk) + str(timestamp) + str(user.is_active)
         )
 
 
