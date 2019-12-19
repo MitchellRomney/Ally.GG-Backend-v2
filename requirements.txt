@@ -13,3 +13,4 @@ dj-database-url
 whitenoise
 uvicorn
 gunicorn
+psycopg2
