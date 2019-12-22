@@ -23,6 +23,35 @@ def startup_tasks(sender=None, conf=None, **kwargs):
 
 
 @app.task
+def send_notification(notification_id):
+    from Website.models import Notification
+    notification_obj = Notification.objects.get(id=notification_id)
+
+    notification = {
+        'id': notification_obj.id,
+        'title': notification_obj.title,
+        'content': notification_obj.content,
+        'seen': notification_obj.seen,
+        'category': notification_obj.category,
+        'dateCreated': str(notification_obj.date_created),
+        'dateModified': str(notification_obj.date_modified),
+    }
+
+    async_to_sync(get_channel_layer().group_send)(
+        f'notifications_{notification_obj.user.id}',
+        {
+            'type': 'send_notification',
+            'message': 'New Notification: ' + str(notification_obj.id),
+            'data': {
+                'notification': json.dumps(notification)
+            }
+        }
+    )
+
+    return True
+
+
+@app.task
 def update_summoner(summoner_id, server):
     from Website.functions.api import get_summoner
 
@@ -34,12 +63,9 @@ def update_summoner(summoner_id, server):
 @app.task
 def fetch_match(game_id, summoner_id, server):
     from Website.functions.api import get_match
-    from Website.models import Participant
     from AllyBackend import schema
 
-    match_result = get_match(game_id, server)
-
-    print(Participant.objects.get(match__game_id=game_id, summoner__server=server, summoner__summoner_id=summoner_id))
+    get_match(game_id, server)
 
     query = (
         '''
@@ -128,8 +154,6 @@ def fetch_match(game_id, summoner_id, server):
             }
         }
     )
-
-    return True
 
 
 @app.task
@@ -437,3 +461,4 @@ def save_spells(spells_info):
         )
 
     print(f'Spells Updated ({count})')
+

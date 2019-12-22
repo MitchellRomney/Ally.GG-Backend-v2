@@ -5,7 +5,13 @@ from django.db.models import Sum
 from graphene_django.types import DjangoObjectType
 from graphql_jwt.utils import jwt_encode, jwt_payload
 
-from Website.models import Summoner, RankedTier, Participant, Champion, Match, Item, Rune, SummonerSpell, Team, Profile, RegistrationInterest, AccessCode
+from Website.models import Summoner, RankedTier, Participant, Champion, Match, Item, Rune, SummonerSpell, \
+    Team, Profile, RegistrationInterest, AccessCode, Notification
+
+
+class NotificationType(DjangoObjectType):
+    class Meta:
+        model = Notification
 
 
 class RegistrationInterestType(DjangoObjectType):

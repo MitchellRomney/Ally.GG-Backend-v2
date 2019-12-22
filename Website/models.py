@@ -5,6 +5,22 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
+class Notification(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    user = models.ForeignKey(User, related_name='Notification_Users', on_delete=models.SET_NULL, blank=True, null=True)
+    CATEGORIES = (
+        ('ALERT', 'Alert'),
+        ('NEWS', 'News'),
+        ('DEBUG', 'Debug'),
+    )
+    category = models.CharField(max_length=255, choices=CATEGORIES)
+    seen = models.BooleanField(default=False)
+
+    date_created = models.DateTimeField(auto_now_add=True, blank=False)
+    date_modified = models.DateTimeField(auto_now=True, blank=False)
+
+
 class RankedTier(models.Model):
     key = models.CharField(primary_key=True, max_length=255)
     name = models.CharField(max_length=255)

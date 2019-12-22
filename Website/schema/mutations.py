@@ -5,13 +5,67 @@ from Website.schema.types import UserType
 from Website.functions.api import get_summoner
 from Website.functions.game_data import update_game_data
 from Website.functions.general import account_activation_token, generate_early_access_code
-from Website.schema.types import SummonerType, UserNode, ProfileType
+from Website.schema.types import SummonerType, UserNode, ProfileType, NotificationType
 from django.db import IntegrityError
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login
 from django.core.mail import send_mail
 from datetime import datetime
+
+
+class MarkNotificationSeen(graphene.Mutation):
+    class Arguments:
+        notification_id = graphene.Int()
+        mark_all = graphene.Boolean()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, info, notification_id, mark_all):
+        from Website.models import Notification
+
+        if mark_all:
+            notifications = Notification.objects.filter(seen=False)
+
+            for notification in notifications:
+                notification.seen = True
+
+            Notification.objects.bulk_update(notifications, ['seen', ])
+        else:
+            notification = Notification.objects.get(id=notification_id)
+            notification.seen = True
+            notification.save()
+
+        return MarkNotificationSeen(success=True)
+
+
+class CreateNotification(graphene.Mutation):
+    class Arguments:
+        title = graphene.String()
+        content = graphene.String()
+        category = graphene.String()
+        userId = graphene.Int()
+
+    notification = graphene.Field(NotificationType)
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, info, title, content, category, userId):
+        from Website.models import Notification
+        from django.contrib.auth.models import User
+
+        try:
+            notification = Notification.objects.create(
+                title=title,
+                content=content,
+                category=category,
+                user=User.objects.get(id=userId)
+            )
+        except:
+            return CreateNotification(notification=None, success=False)
+
+        return CreateNotification(notification=notification, success=True)
 
 
 class RegisterInterest(graphene.Mutation):

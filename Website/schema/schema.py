@@ -2,8 +2,8 @@ import graphene
 import graphql_jwt
 
 from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken, \
-    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType
+    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner, CreateNotification, MarkNotificationSeen
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType, NotificationType
 from django.contrib.auth.models import User
 
 
@@ -18,11 +18,22 @@ class Query(object):
         user_id=graphene.Int()
     )
 
+    user_notifications = graphene.List(
+        NotificationType,
+        user_id=graphene.Int()
+    )
+
     participant = graphene.Field(
         ParticipantType,
         game_id=graphene.Int(),
         summoner_id=graphene.String(),
         server=graphene.String()
+    )
+
+    summoner = graphene.Field(
+        SummonerType,
+        server=graphene.String(),
+        summoner_name=graphene.String()
     )
 
     summoner_participants = graphene.List(
@@ -53,9 +64,19 @@ class Query(object):
         return Summoner.objects.filter(user_profile__user__id=kwargs.get('user_id')).select_related('user_profile')
 
     @staticmethod
+    def resolve_user_notifications(self, info, **kwargs):
+        from Website.models import Notification
+        return Notification.objects.filter(user__id=kwargs.get('user_id')).order_by('-date_created')[:10]
+
+    @staticmethod
     def resolve_participant(self, info, **kwargs):
         from Website.models import Participant
         return Participant.objects.get(match__game_id=kwargs.get('game_id'), summoner__server=kwargs.get('server'), summoner__summoner_id=kwargs.get('summoner_id'))
+
+    @staticmethod
+    def resolve_summoner(self, info, **kwargs):
+        from Website.models import Summoner
+        return Summoner.objects.get(server=kwargs.get('server'), summoner_name=kwargs.get('summoner_name'))
 
     @staticmethod
     def resolve_summoner_participants(self, info, **kwargs):
@@ -106,4 +127,6 @@ class Mutation(graphene.ObjectType):
     refresh_token = graphql_jwt.Refresh.Field()
     login = Login.Field()
     verify_summoner = VerifySummoner.Field()
+    create_notification = CreateNotification.Field()
+    mark_notification_seen = MarkNotificationSeen.Field()
 
