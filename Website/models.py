@@ -5,6 +5,32 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
+class Post(models.Model):
+    content = models.TextField()
+    user_source = models.ForeignKey(User, related_name='Post_Users', on_delete=models.SET_NULL, blank=True, null=True)
+    TYPES = (
+        (1, 'Debug'),
+        (2, 'Milestone')
+    )
+    post_type = models.IntegerField(choices=TYPES)
+
+    date_created = models.DateTimeField(auto_now_add=True, blank=False)
+    date_modified = models.DateTimeField(auto_now=True, blank=False)
+
+
+class PostInteraction(models.Model):
+    user = models.ForeignKey(User, related_name='PostInteraction_Users', on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name='PostInteraction_Posts', on_delete=models.CASCADE)
+    TYPES = (
+        (1, 'LIKE'),
+        (2, 'UNLIKED')
+    )
+    post_interaction_type = models.IntegerField(choices=TYPES)
+
+    date_created = models.DateTimeField(auto_now_add=True, blank=False)
+    date_modified = models.DateTimeField(auto_now=True, blank=False)
+
+
 class Notification(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -45,7 +71,7 @@ class AccessCode(models.Model):
 
 
 class RegistrationInterest(models.Model):
-    first_name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     email = models.CharField(max_length=255)
     user = models.ForeignKey(User, related_name='RegistrationInterest_User', on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -276,6 +302,8 @@ class Profile(models.Model):
     main_summoner = models.ForeignKey('Summoner', related_name='Main_Summoners', on_delete=models.SET_NULL, null=True, blank=True)
     email_confirmed = models.BooleanField(default=False)
     third_party_token = models.CharField(max_length=12, blank=True, null=True)
+    friends = models.ManyToManyField('Profile', related_name="Profile_Friends", blank=True)
+    following = models.ManyToManyField('Profile', related_name="Profile_Followings", blank=True)
 
     archived = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, blank=False)

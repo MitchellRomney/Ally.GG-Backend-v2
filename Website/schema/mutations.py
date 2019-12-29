@@ -14,6 +14,35 @@ from django.core.mail import send_mail
 from datetime import datetime
 
 
+class TogglePostLike(graphene.Mutation):
+    class Arguments:
+        post_id = graphene.Int()
+        user_id = graphene.Int()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, info, post_id, user_id):
+        from Website.models import Post, PostInteraction, User
+
+        post_interaction, created = PostInteraction.objects.get_or_create(
+            post__id=post_id,
+            user__id=user_id,
+            defaults={
+                'user': User.objects.get(id=user_id),
+                'post': Post.objects.get(id=post_id),
+                'post_interaction_type': 1
+            }
+        )
+
+        if not created:
+            post_interaction.post_interaction_type = 2 if post_interaction.post_interaction_type is 1 else 1
+
+        post_interaction.save()
+
+        return TogglePostLike(success=True)
+
+
 class MarkNotificationSeen(graphene.Mutation):
     class Arguments:
         notification_id = graphene.Int()
@@ -74,13 +103,22 @@ class RegisterInterest(graphene.Mutation):
         email = graphene.String()
 
     success = graphene.Boolean()
+    errorReason = graphene.String()
 
     @staticmethod
     def mutate(root, info, name, email):
         from Website.models import RegistrationInterest
-        RegistrationInterest.objects.create(first_name=name, email=email)
-
-        return RegisterInterest(success=True)
+        obj, created = RegistrationInterest.objects.get_or_create(
+            email=email,
+            defaults={
+                'name': name,
+                'email': email
+            }
+        )
+        if created:
+            return RegisterInterest(success=True, errorReason=None)
+        else:
+            return RegisterInterest(success=False, errorReason='This email is already registered for early access.')
 
 
 class FetchSummoner(graphene.Mutation):

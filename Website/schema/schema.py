@@ -2,8 +2,10 @@ import graphene
 import graphql_jwt
 
 from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken, \
-    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner, CreateNotification, MarkNotificationSeen
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType, NotificationType
+    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner, CreateNotification, MarkNotificationSeen, \
+    TogglePostLike
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType, NotificationType, \
+    PostType, RegistrationInterestType
 from django.contrib.auth.models import User
 
 
@@ -53,10 +55,37 @@ class Query(object):
         key=graphene.String()
     )
 
+    posts = graphene.List(
+        PostType,
+        user_id=graphene.Int()
+    )
+
+    registration_interests = graphene.List(
+        RegistrationInterestType
+    )
+
+    @staticmethod
+    def resolve_posts(self, info, **kwargs):
+        from Website.models import Post, Profile, PostInteraction
+        user_id = kwargs.get('user_id')
+        profile = Profile.objects.filter(user__id=user_id)
+        followed_user_ids = list(profile.values_list('following__id', flat=True))
+        followed_user_ids.append(user_id)
+        posts = Post.objects.filter(user_source__id__in=followed_user_ids)
+        existing_likes = list(PostInteraction.objects.filter(post_interaction_type=1, user__id=user_id, post__id__in=list(posts.values_list('id', flat=True))).values_list('post__id', flat=True))
+        for p in posts:
+            p.userLiked = p.id in existing_likes
+        return posts
+
     @staticmethod
     def resolve_user(self, info, **kwargs):
         return User.objects.get(id=kwargs.get('user_id')) if kwargs.get('user_id') is not None else \
             User.objects.get(username=kwargs.get('username'))
+
+    @staticmethod
+    def resolve_registration_interests(self, info, **kwargs):
+        from Website.models import RegistrationInterest
+        return RegistrationInterest.objects.all()
 
     @staticmethod
     def resolve_user_summoners(self, info, **kwargs):
@@ -76,7 +105,7 @@ class Query(object):
     @staticmethod
     def resolve_summoner(self, info, **kwargs):
         from Website.models import Summoner
-        return Summoner.objects.get(server=kwargs.get('server'), summoner_name=kwargs.get('summoner_name'))
+        return Summoner.objects.get(server=kwargs.get('server'), summoner_name__iexact=kwargs.get('summoner_name'))
 
     @staticmethod
     def resolve_summoner_participants(self, info, **kwargs):
@@ -129,4 +158,5 @@ class Mutation(graphene.ObjectType):
     verify_summoner = VerifySummoner.Field()
     create_notification = CreateNotification.Field()
     mark_notification_seen = MarkNotificationSeen.Field()
+    toggle_post_like = TogglePostLike.Field()
 

@@ -6,7 +6,28 @@ from graphene_django.types import DjangoObjectType
 from graphql_jwt.utils import jwt_encode, jwt_payload
 
 from Website.models import Summoner, RankedTier, Participant, Champion, Match, Item, Rune, SummonerSpell, \
-    Team, Profile, RegistrationInterest, AccessCode, Notification
+    Team, Profile, RegistrationInterest, AccessCode, Notification, Post, PostInteraction
+
+
+class PostType(DjangoObjectType):
+    class Meta:
+        model = Post
+
+    like_count = graphene.Int()
+    user_liked = graphene.Boolean()
+
+    @staticmethod
+    def resolve_like_count(self, info):
+        return PostInteraction.objects.filter(post__id=self.id, post_interaction_type=1).count()
+
+    @staticmethod
+    def resolve_user_liked(self, info, **kwargs):
+        return self.userLiked
+
+
+class PostInteractionType(DjangoObjectType):
+    class Meta:
+        model = PostInteraction
 
 
 class NotificationType(DjangoObjectType):

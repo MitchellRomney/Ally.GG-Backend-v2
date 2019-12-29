@@ -2,8 +2,40 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 
-from Website.models import Champion, Item, Match, Participant, Profile, Summoner, Team, \
+from Website.models import Champion, Item, Match, Participant, Profile, Summoner, Team, Post, PostInteraction, \
     SummonerSpell, ParticipantFrame, MatchEvent, RegistrationInterest, AccessCode, Notification
+
+
+class PostAdmin(admin.ModelAdmin):
+    model = Post
+
+    list_display = (
+        'user_source',
+        'post_type',
+        'date_modified',
+        'date_created',
+    )
+
+    search_fields = (
+        'user_source__username',
+    )
+
+
+class PostInteractionAdmin(admin.ModelAdmin):
+    model = PostInteraction
+
+    list_display = (
+        'user',
+        'post',
+        'post_interaction_type',
+        'date_modified',
+        'date_created',
+    )
+
+    search_fields = (
+        'user__username',
+        'post'
+    )
 
 
 class UserAdmin(BaseUserAdmin):
@@ -237,13 +269,13 @@ class MatchEventAdmin(admin.ModelAdmin):
         'match__game_id',
     )
 
+
 class RegistrationInterestAdmin(admin.ModelAdmin):
     model = RegistrationInterest
 
     list_display = (
-       'first_name',
-       'email',
-       'user',
+        'name',
+        'user',
         'date_created'
     )
 
@@ -255,17 +287,18 @@ class RegistrationInterestAdmin(admin.ModelAdmin):
         'email',
     )
 
-class AccessCodeAdmin(admin.ModelAdmin):
-   model = AccessCode
 
-   list_display = (
-       'key',
-       'used',
-       'user',
-       'date_used',
-       'date_created',
-       'archived'
-   )
+class AccessCodeAdmin(admin.ModelAdmin):
+    model = AccessCode
+
+    list_display = (
+        'key',
+        'used',
+        'user',
+        'date_used',
+        'date_created',
+        'archived'
+    )
 
 
 admin.site.unregister(Group)
@@ -285,3 +318,5 @@ admin.site.register(ParticipantFrame, ParticipantFrameAdmin)
 admin.site.register(MatchEvent, MatchEventAdmin)
 admin.site.register(RegistrationInterest, RegistrationInterestAdmin)
 admin.site.register(AccessCode, AccessCodeAdmin)
+admin.site.register(Post, PostAdmin)
+admin.site.register(PostInteraction, PostInteractionAdmin)
