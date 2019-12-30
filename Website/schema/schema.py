@@ -1,11 +1,5 @@
-import graphene
-import graphql_jwt
-
-from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken, \
-    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner, CreateNotification, MarkNotificationSeen, \
-    TogglePostLike
-from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType, NotificationType, \
-    PostType, RegistrationInterestType
+from Website.schema.mutations import *
+from Website.schema.types import *
 from django.contrib.auth.models import User
 
 
@@ -85,7 +79,7 @@ class Query(object):
     @staticmethod
     def resolve_registration_interests(self, info, **kwargs):
         from Website.models import RegistrationInterest
-        return RegistrationInterest.objects.all()
+        return RegistrationInterest.objects.all().order_by('-date_created')
 
     @staticmethod
     def resolve_user_summoners(self, info, **kwargs):
@@ -159,4 +153,5 @@ class Mutation(graphene.ObjectType):
     create_notification = CreateNotification.Field()
     mark_notification_seen = MarkNotificationSeen.Field()
     toggle_post_like = TogglePostLike.Field()
+    accept_early_access_application = AcceptEarlyAccessApplication.Field()
 

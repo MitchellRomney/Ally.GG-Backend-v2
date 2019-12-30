@@ -276,6 +276,7 @@ class RegistrationInterestAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'user',
+        'accepted',
         'date_created'
     )
 

@@ -59,9 +59,10 @@ class RankedTier(models.Model):
 class AccessCode(models.Model):
     key = models.CharField(max_length=32, blank=False, null=False)
 
-    user = models.ForeignKey(User, related_name="Access_Codes", on_delete=models.SET_NULL, blank=True, null=True)
+    user = models.ForeignKey(User, related_name="AccessCode_Users", on_delete=models.SET_NULL, blank=True, null=True)
     used = models.BooleanField(default=False)
     date_used = models.DateTimeField(blank=True, null=True)
+    registration_interest = models.ForeignKey('RegistrationInterest', related_name="AccessCode_RegistrationInterests", on_delete=models.SET_NULL, blank=True, null=True)
 
     archived = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, blank=False)
@@ -73,7 +74,9 @@ class AccessCode(models.Model):
 class RegistrationInterest(models.Model):
     name = models.CharField(max_length=255)
     email = models.CharField(max_length=255)
-    user = models.ForeignKey(User, related_name='RegistrationInterest_User', on_delete=models.SET_NULL, blank=True, null=True)
+    user = models.ForeignKey(User, related_name='RegistrationInterest_Users', on_delete=models.SET_NULL, blank=True, null=True)
+    accepted = models.BooleanField(default=False)
+    early_access_key = models.ForeignKey(AccessCode, related_name='RegistrationInterest_AccessCodes', on_delete=models.SET_NULL, blank=True, null=True)
 
     date_created = models.DateTimeField(auto_now_add=True, blank=False)
     date_modified = models.DateTimeField(auto_now=True, blank=False)

@@ -1,0 +1,3 @@
+Hi {{ name }},
+Congratulations, welcome to Ally.gg Alpha. To register your account and get early access, click the link below:
+https://{{ domain }}?key={{ key }}

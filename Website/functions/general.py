@@ -24,6 +24,7 @@ def is_new_version(current, new):
 
     return False
 
+
 def generate_summoner_verification_code():
 
     # Generate the key.
@@ -33,18 +34,19 @@ def generate_summoner_verification_code():
     return unique_id
 
 
-def generate_early_access_code():
+def generate_early_access_code(application=None):
 
     # Generate the key.
     unique_id = get_random_string(length=32)
 
     # Add the key to the database.
-    AccessCode.objects.create(
+    code_obj = AccessCode.objects.create(
         key=unique_id,
+        registration_interest=application
     )
 
     # Return the generate key.
-    return unique_id
+    return code_obj
 
 
 account_activation_token = TokenGenerator()

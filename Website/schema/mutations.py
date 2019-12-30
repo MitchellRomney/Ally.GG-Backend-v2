@@ -14,6 +14,44 @@ from django.core.mail import send_mail
 from datetime import datetime
 
 
+class AcceptEarlyAccessApplication(graphene.Mutation):
+    class Arguments:
+        application_id = graphene.Int()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, info, application_id):
+        from Website.models import RegistrationInterest
+        application = RegistrationInterest.objects.get(id=application_id)
+
+        application.accepted = True
+        application.early_access_key = generate_early_access_code(application=application)
+        application.save()
+
+        # Send confirmation email.
+        mail_subject = 'Congratulations! You\'ve been accepted into the Ally.gg Alpha!'
+        mail_plain = render_to_string('Website/email/alpha_access.txt', {
+            'name': application.name,
+            'domain': 'ally.gg',
+            'key': application.early_access_key.key,
+        })
+        mail_html = render_to_string('Website/email/alpha_access.html', {
+            'name': application.name,
+            'domain': 'ally.gg',
+            'key': application.early_access_key.key,
+        })
+        send_mail(
+            mail_subject,  # Email subject.
+            mail_plain,  # Email plaintext.
+            'noreply@ally.gg',  # Email 'From' address.
+            [application.email, ],  # Email 'To' addresses. This must be a list or tuple.
+            html_message=mail_html,  # Email in HTML.
+        )
+
+        return AcceptEarlyAccessApplication(success=True)
+
+
 class TogglePostLike(graphene.Mutation):
     class Arguments:
         post_id = graphene.Int()
@@ -36,7 +74,7 @@ class TogglePostLike(graphene.Mutation):
         )
 
         if not created:
-            post_interaction.post_interaction_type = 2 if post_interaction.post_interaction_type is 1 else 1
+            post_interaction.post_interaction_type = 2 if post_interaction.post_interaction_type == 1 else 1
 
         post_interaction.save()
 
@@ -238,7 +276,7 @@ class Register(graphene.Mutation):
         try:
             access_key = AccessCode.objects.get(key=input.key)
 
-            if access_key.used is False:
+            if not access_key.used and (not access_key.registration_interest or access_key.registration_interest.email is input.email):
                 try:
                     # Create the new user.
                     user = User.objects.create(
@@ -255,8 +293,6 @@ class Register(graphene.Mutation):
                     access_key.user = user
                     access_key.date_used = datetime.now()
                     access_key.save()
-
-                    # TODO: If DEBUG ignore email
 
                     # Send confirmation email.
                     mail_subject = 'Welcome to Ally! Let\'s activate your account.'
@@ -309,7 +345,7 @@ class CreateAccessKey(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info):
-        return CreateAccessKey(key=generate_early_access_code())
+        return CreateAccessKey(key=generate_early_access_code().key)
 
 
 class VerifySummoner(graphene.Mutation):
