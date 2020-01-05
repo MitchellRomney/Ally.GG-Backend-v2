@@ -17,7 +17,7 @@ def riot_api(server=None, endpoint=None, version='v4', path=None, session=None):
     # TODO: Error Handling
 
     if response.status_code in [404, 403]:
-        return { "error": True, "message": f"{response.status_code} ERROR" }
+        return {"error": True, "message": f"{response.status_code} ERROR"}
 
     return json.loads(json.dumps(response.json()))
 

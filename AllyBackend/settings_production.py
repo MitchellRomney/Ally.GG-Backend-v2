@@ -1,8 +1,6 @@
 import dj_database_url
 from AllyBackend.settings import *
 
-sentry_sdk.init(environment='API (Production)')
-
 RIOT_API_KEY = os.environ.get('RIOT_API_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
@@ -20,9 +18,7 @@ CORS_ORIGIN_ALLOW_ALL = False
 
 CORS_ORIGIN_WHITELIST = [
     'https://www.ally.gg',
-    'http://www.ally.gg',
     'https://ally.gg',
-    'http://ally.gg',
 ]
 
 DEBUG = False
@@ -37,3 +33,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'support@ally.gg'
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 EMAIL_PORT = 587
+
+sentry_sdk.init(
+    dsn="https://ee789799be9c4c3ab7411232f46b164c@sentry.io/1444367",
+    integrations=[DjangoIntegration(), CeleryIntegration()],
+    send_default_pii=True,
+    environment='API (Production)'
+)
