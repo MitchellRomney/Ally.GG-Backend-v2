@@ -1,6 +1,8 @@
 import dj_database_url
 from AllyBackend.settings import *
 
+sentry_sdk.init(environment='API (Production)')
+
 RIOT_API_KEY = os.environ.get('RIOT_API_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 

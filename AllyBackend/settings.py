@@ -1,6 +1,9 @@
 import os
 
 import environ
+import sentry_sdk
+
+from sentry_sdk.integrations.django import DjangoIntegration
 
 env = environ.Env()
 environ.Env.read_env()
@@ -157,3 +160,10 @@ if DEBUG:
     EMAIL_HOST_PASSWORD = ''
     EMAIL_USE_TLS = False
     DEFAULT_FROM_EMAIL = 'testing@example.com'
+
+sentry_sdk.init(
+    dsn="https://ee789799be9c4c3ab7411232f46b164c@sentry.io/1444367",
+    integrations=[DjangoIntegration()],
+    send_default_pii=True,
+    environment='API (Local)'
+)
