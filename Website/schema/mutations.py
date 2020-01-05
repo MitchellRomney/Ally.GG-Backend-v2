@@ -5,6 +5,7 @@ from Website.schema.types import UserType
 from Website.functions.api import get_summoner
 from Website.functions.game_data import update_game_data
 from Website.functions.general import account_activation_token, generate_early_access_code
+from Website.tasks import send_early_access_email
 from Website.schema.types import SummonerType, UserNode, ProfileType, NotificationType
 from django.db import IntegrityError
 from django.template.loader import render_to_string
@@ -29,25 +30,11 @@ class AcceptEarlyAccessApplication(graphene.Mutation):
         application.early_access_key = generate_early_access_code(application=application)
         application.save()
 
-        # Send confirmation email.
-        mail_subject = 'Congratulations! You\'ve been accepted into the Ally.gg Alpha!'
-        mail_plain = render_to_string('Website/email/alpha_access.txt', {
+        send_early_access_email.delay({
             'name': application.name,
-            'domain': 'ally.gg',
-            'key': application.early_access_key.key,
+            'email': application.email,
+            'key': application.early_access_key.key
         })
-        mail_html = render_to_string('Website/email/alpha_access.html', {
-            'name': application.name,
-            'domain': 'ally.gg',
-            'key': application.early_access_key.key,
-        })
-        send_mail(
-            mail_subject,  # Email subject.
-            mail_plain,  # Email plaintext.
-            'noreply@ally.gg',  # Email 'From' address.
-            [application.email, ],  # Email 'To' addresses. This must be a list or tuple.
-            html_message=mail_html,  # Email in HTML.
-        )
 
         return AcceptEarlyAccessApplication(success=True)
 
@@ -275,54 +262,58 @@ class Register(graphene.Mutation):
         from Website.models import AccessCode, User
         try:
             access_key = AccessCode.objects.get(key=input.key)
+            if User.objects.filter(username__iexact=input.username).count() == 0:
+                if not access_key.used and (not access_key.registration_interest or access_key.registration_interest.email == input.email):
+                    try:
+                        # Create the new user.
+                        user = User.objects.create(
+                            username=input.username,
+                            email=input.email,
+                            is_active=True
+                        )
+                        user.set_password(input.password)
+                        user.save()
 
-            if not access_key.used and (not access_key.registration_interest or access_key.registration_interest.email is input.email):
-                try:
-                    # Create the new user.
-                    user = User.objects.create(
-                        username=input.username,
-                        email=input.email,
-                        is_active=True
-                    )
-                    user.set_password(input.password)
-                    user.save()
+                        # Deactivate the Access Key used.
+                        access_key.used = True
+                        access_key.archived = True
+                        access_key.user = user
+                        access_key.date_used = datetime.now()
+                        access_key.save()
 
-                    # Deactivate the Access Key used.
-                    access_key.used = True
-                    access_key.archived = True
-                    access_key.user = user
-                    access_key.date_used = datetime.now()
-                    access_key.save()
+                        if not access_key.registration_interest:
+                            # Send confirmation email.
+                            mail_subject = 'Welcome to Ally! Let\'s activate your account.'
+                            mail_plain = render_to_string('Website/email/email_confirmation.txt', {
+                                'user': user,
+                                'domain': 'api.ally.gg',
+                                'username': user.username,
+                                'token': account_activation_token.make_token(user),
+                            })
+                            mail_html = render_to_string('Website/email/email_confirmation.html', {
+                                'user': user,
+                                'domain': 'api.ally.gg',
+                                'username': user.username,
+                                'token': account_activation_token.make_token(user),
+                            })
+                            send_mail(
+                                mail_subject,  # Email subject.
+                                mail_plain,  # Email plaintext.
+                                'noreply@ally.gg',  # Email 'From' address.
+                                [user.email, ],  # Email 'To' addresses. This must be a list or tuple.
+                                html_message=mail_html,  # Email in HTML.
+                            )
+                        return Register(success=bool(user.id))
 
-                    # Send confirmation email.
-                    mail_subject = 'Welcome to Ally! Let\'s activate your account.'
-                    mail_plain = render_to_string('Website/email/email_confirmation.txt', {
-                        'user': user,
-                        'domain': 'api.ally.gg',
-                        'username': user.username,
-                        'token': account_activation_token.make_token(user),
-                    })
-                    mail_html = render_to_string('Website/email/email_confirmation.html', {
-                        'user': user,
-                        'domain': 'api.ally.gg',
-                        'username': user.username,
-                        'token': account_activation_token.make_token(user),
-                    })
-                    send_mail(
-                        mail_subject,  # Email subject.
-                        mail_plain,  # Email plaintext.
-                        'noreply@ally.gg',  # Email 'From' address.
-                        [user.email, ],  # Email 'To' addresses. This must be a list or tuple.
-                        html_message=mail_html,  # Email in HTML.
-                    )
-                    return Register(success=bool(user.id))
+                    except IntegrityError:
+                        errors = ["email", "Email already registered."]
+                        return Register(success=False, errors=errors)
 
-                except IntegrityError:
-                    errors = ["email", "Email already registered."]
+                else:
+                    errors = ["key", "Access Key has already been used."]
                     return Register(success=False, errors=errors)
-
             else:
-                errors = ["key", "Access Key has already been used."]
+                errors = ["username", "Username is taken."]
                 return Register(success=False, errors=errors)
 
         except AccessCode.DoesNotExist:

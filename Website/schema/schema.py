@@ -1,5 +1,11 @@
-from Website.schema.mutations import *
-from Website.schema.types import *
+import graphene
+import graphql_jwt
+
+from Website.schema.mutations import FetchMatches, FetchSummoner, UpdateGameData, Login, ObtainJSONWebToken, \
+    EditProfile, RegisterInterest, Register, CreateAccessKey, VerifySummoner, CreateNotification, \
+    MarkNotificationSeen, TogglePostLike, AcceptEarlyAccessApplication
+from Website.schema.types import UserType, SummonerType, ParticipantType, ProfileType, AccessKeyType, \
+    NotificationType, PostType, RegistrationInterestType
 from django.contrib.auth.models import User
 
 
@@ -74,7 +80,7 @@ class Query(object):
     @staticmethod
     def resolve_user(self, info, **kwargs):
         return User.objects.get(id=kwargs.get('user_id')) if kwargs.get('user_id') is not None else \
-            User.objects.get(username=kwargs.get('username'))
+            User.objects.get(username__iexact=kwargs.get('username'))
 
     @staticmethod
     def resolve_registration_interests(self, info, **kwargs):

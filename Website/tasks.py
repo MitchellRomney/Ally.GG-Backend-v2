@@ -1,10 +1,13 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
+import urllib.parse
 
 from asgiref.sync import async_to_sync
 from celery.signals import celeryd_init
 from channels.layers import get_channel_layer
+from django.template.loader import render_to_string
+from django.core.mail import send_mail, get_connection
 
 from AllyBackend.celery import app
 
@@ -461,4 +464,22 @@ def save_spells(spells_info):
         )
 
     print(f'Spells Updated ({count})')
+
+
+@app.task
+def send_early_access_email(payload):
+    content = {
+        'name': payload["name"],
+        'email': urllib.parse.quote(payload["email"], safe=''),
+        'domain': 'ally.gg',
+        'key': urllib.parse.quote(payload["key"], safe=''),
+    }
+
+    send_mail(
+        'Congratulations! You\'ve been accepted into the Ally.gg Alpha!',
+        render_to_string('Website/email/alpha_access.txt', content),
+        'noreply@ally.gg',
+        [payload["email"], ],
+        html_message=render_to_string('Website/email/alpha_access.html', content)
+    )
 
