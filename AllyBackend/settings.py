@@ -4,6 +4,7 @@ import environ
 import sentry_sdk
 
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 env = environ.Env()
 environ.Env.read_env()
@@ -163,7 +164,7 @@ if DEBUG:
 
 sentry_sdk.init(
     dsn="https://ee789799be9c4c3ab7411232f46b164c@sentry.io/1444367",
-    integrations=[DjangoIntegration()],
+    integrations=[DjangoIntegration(), CeleryIntegration()],
     send_default_pii=True,
     environment='API (Local)'
 )

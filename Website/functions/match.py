@@ -51,9 +51,9 @@ def save_match(match_data, server):
     for participant_identity in match_data['participantIdentities']:
         player_accounts[participant_identity['participantId']] = participant_identity['player']
 
+    get_timeline(match_obj, server)
     participants = create_participants(match_obj, match_data, player_accounts, blue_team, red_team)
     Participant.objects.bulk_create(participants)
-    get_timeline(match_obj, server)
 
     return match_obj, [blue_team, red_team], participants
 
