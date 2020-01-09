@@ -3,7 +3,16 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 
 from Website.models import Champion, Item, Match, Participant, Profile, Summoner, Team, Post, PostInteraction, \
-    SummonerSpell, ParticipantFrame, MatchEvent, RegistrationInterest, AccessCode, Notification
+    SummonerSpell, ParticipantFrame, MatchEvent, RegistrationInterest, AccessCode, Notification, RankedTier
+
+
+class RankedTierAdmin(admin.ModelAdmin):
+    model = RankedTier
+
+    list_display = (
+        'key',
+        'name',
+    )
 
 
 class PostAdmin(admin.ModelAdmin):
@@ -321,3 +330,4 @@ admin.site.register(RegistrationInterest, RegistrationInterestAdmin)
 admin.site.register(AccessCode, AccessCodeAdmin)
 admin.site.register(Post, PostAdmin)
 admin.site.register(PostInteraction, PostInteractionAdmin)
+admin.site.register(RankedTier, RankedTierAdmin)

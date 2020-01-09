@@ -15,6 +15,7 @@ class PostType(DjangoObjectType):
 
     like_count = graphene.Int()
     user_liked = graphene.Boolean()
+    type = graphene.String()
 
     @staticmethod
     def resolve_like_count(self, info):
@@ -23,6 +24,10 @@ class PostType(DjangoObjectType):
     @staticmethod
     def resolve_user_liked(self, info, **kwargs):
         return self.userLiked
+
+    @staticmethod
+    def resolve_type(self, info, **kwargs):
+        return self.get_post_type_display()
 
 
 class PostInteractionType(DjangoObjectType):
@@ -82,9 +87,25 @@ class RankedTierType(DjangoObjectType):
         model = RankedTier
 
 
+class StatisticsType(graphene.ObjectType):
+    winrate = graphene.Int()
+
+
 class SummonerType(DjangoObjectType):
+    statistics = graphene.Field(StatisticsType)
+
     class Meta:
         model = Summoner
+
+    @staticmethod
+    def resolve_statistics(self, info, **kwargs):
+        from Website.models import Participant
+        latest_games = Participant.objects.filter(summoner__id=self.id).order_by('-match__timestamp')[:20]
+        win_count = 0
+        for game in latest_games:
+            if game.win:
+                win_count += 1
+        return StatisticsType(winrate=round((win_count/20)*100))
 
 
 class UserNode(DjangoObjectType):

@@ -71,7 +71,7 @@ class Query(object):
         profile = Profile.objects.filter(user__id=user_id)
         followed_user_ids = list(profile.values_list('following__id', flat=True))
         followed_user_ids.append(user_id)
-        posts = Post.objects.filter(user_source__id__in=followed_user_ids)
+        posts = Post.objects.filter(user_source__id__in=followed_user_ids).order_by('-date_created')[:10]
         existing_likes = list(PostInteraction.objects.filter(post_interaction_type=1, user__id=user_id, post__id__in=list(posts.values_list('id', flat=True))).values_list('post__id', flat=True))
         for p in posts:
             p.userLiked = p.id in existing_likes

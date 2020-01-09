@@ -194,8 +194,11 @@ class FetchMatches(graphene.Mutation):
     @staticmethod
     def mutate(root, info, summoner_id, server, games, fetch_all):
         from Website.functions.api import get_match_list
+        from Website.functions.summoner import update_summoner
         from Website.tasks import fetch_match
         from Website.models import Match
+
+        update_summoner(summoner_id, server)
 
         match_list = [match['gameId'] for match in get_match_list(summoner_id, server, games, fetch_all)]
         existing_matches = list(Match.objects.filter(game_id__in=match_list).values_list('game_id', flat=True))

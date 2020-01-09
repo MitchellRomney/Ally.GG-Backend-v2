@@ -6,14 +6,24 @@ from django.db import models
 
 
 class Post(models.Model):
-    content = models.TextField()
-    user_source = models.ForeignKey(User, related_name='Post_Users', on_delete=models.SET_NULL, blank=True, null=True)
+    # Core Fields
+    message = models.TextField()
+    user_source = models.ForeignKey(User, related_name='Post_Users', on_delete=models.CASCADE)
     TYPES = (
         (1, 'Debug'),
-        (2, 'Milestone')
+        (2, 'Promotion'),
+        (3, 'Shared Game')
     )
     post_type = models.IntegerField(choices=TYPES)
 
+    # Promotion Type Fields
+    promotion_tier = models.ForeignKey('RankedTier', related_name='Post_Tiers', on_delete=models.SET_NULL, blank=True, null=True)
+    promotion_division = models.IntegerField(blank=True, null=True)
+
+    # Shared Game Type Fields
+    shared_game = models.ForeignKey('Participant', related_name='Post_Participants', on_delete=models.SET_NULL, blank=True, null=True)
+
+    # System Fields
     date_created = models.DateTimeField(auto_now_add=True, blank=False)
     date_modified = models.DateTimeField(auto_now=True, blank=False)
 
